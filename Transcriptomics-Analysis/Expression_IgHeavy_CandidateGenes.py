@@ -201,7 +201,7 @@ all_types = gi_type + gn_type + mygene_type
 #             'monocyte', 'classical monocyte', 'intermediate monocyte', 'non-classical monocyte', 'macrophage']
 #candidate_gene = 'DLC1'
 
-def igheavv_corr(celltypes, candidate_gene):
+def igheavv_corr(celltypes, candidate_gene,figname):
 
     Donors = adata_orig.obs['donor'].unique().tolist()
     Donors.remove('TSP12')
@@ -230,7 +230,7 @@ def igheavv_corr(celltypes, candidate_gene):
 
     place = 0
 
-    for w in range(len(Donors)):
+    for w in range(len(Donors)): # start iterating through donors to calculate average expression levels
 
         row_mask = (adata_orig.obs['donor'] == Donors[w]).tolist()
 
@@ -253,19 +253,19 @@ def igheavv_corr(celltypes, candidate_gene):
                 if not dfb.empty:
                     df_save.iloc[place, :] = dfb.mean()
 
-                    total_ig = dfb.loc[:, dfb.columns.isin(mygenes[-1])].sum(axis=1).sum()
+                    total_ig = dfb.loc[:, dfb.columns.isin(mygenes[-1])].sum(axis=1).sum() #sum expression of all Ig genes
 
                     for g in mygenes[-1]:
-                        df_save.iloc[place, df_save.columns.get_loc(g)] = (dfb.loc[:, g].sum()/total_ig)*100
+                        df_save.iloc[place, df_save.columns.get_loc(g)] = (dfb.loc[:, g].sum()/total_ig)*100 #relative expression level of candidate IGH genes
 
-                place = place + 1
+                place = place + 1 #counter variable
 
             # Expression of Candidate Gene in other cell-type
             if k == 1:
                 dfx = df.loc[df.Cells.isin(cellsi), gwas_gene[0]]
                 print(df.loc[df.Cells.isin(cellsi), 'Cells'].unique().tolist())
                 df_save.iloc[place, :] = 0
-                df_save.iloc[place, df_save.columns.get_loc(gwas_gene[0])] = dfx[dfx>0].mean()
+                df_save.iloc[place, df_save.columns.get_loc(gwas_gene[0])] = dfx[dfx>0].mean() # get average expression across cells
 
                 place = place + 1
 
@@ -278,7 +278,7 @@ def igheavv_corr(celltypes, candidate_gene):
 
     df_save = df_save.rename(columns={'index': 'inds'})
 
-    df_save['Donor'] = df_save.inds.str.split('_', expand=True)[0]
+    df_save['Donor'] = df_save.inds.str.split('_', expand=True)[0] #organize data from all donors into a dataframe
     df_save['GWAS_Gene'] = df_save.inds.str.split('_', expand=True)[1]
     df_save['Cell_Axis'] = df_save.inds.str.split('_', expand=True)[2]
 
@@ -315,7 +315,7 @@ def igheavv_corr(celltypes, candidate_gene):
 
     # Plot Heatmap
     sns.set_style("white")
-    f, axs = plt.subplots(figsize=(3, 1), dpi=100, constrained_layout=True)
+    f, axs = plt.subplots(figsize=(3, 1), dpi=100, constrained_layout=True) # set up the figure and axes
 
     sns.heatmap(df_corr.loc[:, gene_test], cmap='RdBu_r', ax=axs, robust=False, vmin=-1, vmax=1, square=False,
                 linecolor='#DCE2F3', linewidth=0.5,
@@ -325,16 +325,39 @@ def igheavv_corr(celltypes, candidate_gene):
 
     axs.set_title(None, fontsize=10)
     axs.tick_params(axis='both', pad=0, length=0)
+    # REW added this code ########################
+    f.savefig(figname)   # save the figure to file
+    plt.close(fig)    # close the figure window
+    
+
+    # Plot scatter plots #########################
+    def myscatter(myaxs,x,y,mytitle,myxlabel,myylabel):
+        myaxs[0,0].scatter(x,y,color='blue','marker'='o')
+        myaxs[0,0].set_title(mytitle)
+        myaxs[0,0].set_xlabel(myxlabel)
+        myaxs[0,0].set_ylabel(myylabel)
+
+    sns.set_style("white")
+    f, axs = plt.subplots(1,7, dpi=100, constrained_layout=True) # set up the figure and axes
+
+    for i in range(df.shape[0]): # which data frame did Tomer make that went into correlation analysis??? That is probably the one I need to scatter plot
+        myscatter(axs,'DLC1','IGHG1','IGHG1','DLC1 log(CPM)','IGHG1 log(CPM)')# THESE ARGUMENTS NEED TO BE GENERALIZED FOR ANY IGH GENE / CANDIDATE GENE
+        # FIGURE OUT WHERE THOSE NAMES ARE STORED IN THE DATA FRAME OR ELSEWHERE TO ACCESS FOR THIS FUNCTION
+        # MIGHT BE ROW/COL NAMES OF THE DATA FRAME df_save or dfi?
+    ##############################################
+
+###############################################################################
+# Run function to calculate correlation coefficients
+###############################################################################
 
 candidate_gene = 'DLC1'
 celltypes = ['common myeloid progenitor', 'myeloid cell',
              'monocyte', 'classical monocyte', 'intermediate monocyte', 'non-classical monocyte', 'macrophage']
-
-
+figname = 'DLC1_heatmap.png'
 #candidate_gene = 'RNF141'
 #celltypes = ['common myeloid progenitor', 'myeloid cell',
 #               'CD141-positive myeloid dendritic cell', 'CD1c-positive myeloid dendritic cell', 'dendritic cell',
 #               'monocyte', 'classical monocyte', 'intermediate monocyte', 'non-classical monocyte', 'macrophage',
 #               'granulocyte', 'neutrophil']
 
-igheavv_corr(celltypes, candidate_gene)
+igheavv_corr(celltypes, candidate_gene, figname)
