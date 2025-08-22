@@ -12,6 +12,7 @@ import random
 import scanpy as sc
 import biomart
 import anndata
+import PyQt5
 
 import matplotlib
 matplotlib.use('Qt5Agg')
@@ -42,7 +43,8 @@ pd.set_option('display.float_format', lambda x: '%.2f' % x)
 # Load Data
 ################################################################
 # Data needs to be downloaded from here: https://cellxgene.cziscience.com/collections/e5f58829-1a66-40b5-a624-9046778e74f5
-fn = "local.h5ad"
+fn = "946fa48d-a0ac-4e5b-80fc-1d96cb5083a7.h5ad" #REW edited file name 8/21
+os.chdir('Z:/users/wesselr/data/Tabula_sapiens')
 adata_orig = sc.read_h5ad(fn)
 
 adata_norm = adata_orig.raw.to_adata()
@@ -323,3 +325,16 @@ def igheavv_corr(celltypes, candidate_gene):
 
     axs.set_title(None, fontsize=10)
     axs.tick_params(axis='both', pad=0, length=0)
+
+candidate_gene = 'DLC1'
+celltypes = ['common myeloid progenitor', 'myeloid cell',
+             'monocyte', 'classical monocyte', 'intermediate monocyte', 'non-classical monocyte', 'macrophage']
+
+
+#candidate_gene = 'RNF141'
+#celltypes = ['common myeloid progenitor', 'myeloid cell',
+#               'CD141-positive myeloid dendritic cell', 'CD1c-positive myeloid dendritic cell', 'dendritic cell',
+#               'monocyte', 'classical monocyte', 'intermediate monocyte', 'non-classical monocyte', 'macrophage',
+#               'granulocyte', 'neutrophil']
+
+igheavv_corr(celltypes, candidate_gene)
