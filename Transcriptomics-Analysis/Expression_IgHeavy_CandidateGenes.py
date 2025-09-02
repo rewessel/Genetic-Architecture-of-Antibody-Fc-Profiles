@@ -43,11 +43,15 @@ pd.set_option('display.float_format', lambda x: '%.2f' % x)
 # Load Data
 ################################################################
 # Data needs to be downloaded from here: https://cellxgene.cziscience.com/collections/e5f58829-1a66-40b5-a624-9046778e74f5
-fn = "946fa48d-a0ac-4e5b-80fc-1d96cb5083a7.h5ad" #REW edited file name 8/21
-os.chdir('Z:/users/wesselr/data/Tabula_sapiens')
-adata_orig = sc.read_h5ad(fn)
+#fn = "946fa48d-a0ac-4e5b-80fc-1d96cb5083a7.h5ad" #REW edited file name 8/21 - tabula sapiens all cells
+# fn = "695d23b0-24f4-44ea-96b3-22b5377ab89d.h5ad" #REW edited file name 8/21 - tabula sapiens immune only
+fn = "myeloid_subset.h5ad" #REW edited file name 8/21 -  testing on 10x genomics PBMC 3k data set
 
-adata_norm = adata_orig.raw.to_adata()
+os.chdir('Z:/users/wesselr/data/Tabula_sapiens')
+adata_orig = sc.read_h5ad(fn, backed=True) # the backed argument should take less memory
+
+# adata_norm = adata_orig.raw.to_adata()
+adata_norm = adata_orig
 sc.pp.normalize_total(adata_norm, target_sum=1e6, inplace=True)
 sc.pp.log1p(adata_norm)
 
@@ -55,25 +59,36 @@ sc.pp.log1p(adata_norm)
 # Get Gene Type
 ################################################################
 # Set up connection to server
-server = biomart.BiomartServer('http://uswest.ensembl.org/biomart')
-mart = server.datasets['hsapiens_gene_ensembl']
+# server = biomart.BiomartServer('http://uswest.ensembl.org/biomart')
+# mart = server.datasets['hsapiens_gene_ensembl']
 
+# # List the types of data we want
+# attributes = ['gene_biotype', 'hgnc_symbol']
+
+# # Get the mapping between the attributes
+# response = mart.search({'attributes': attributes})
+# data = response.raw.data.decode('ascii')
+
+# genesymbol_to_biotype = {}
+# # Store the data in a dict
+# for line in data.splitlines():
+#     line = line.split('\t')
+#     # The entries are in the same order as in the `attributes` variable
+#     ensembl_gene = line[0]
+#     gene_symbol = line[1]
+
+#     genesymbol_to_biotype[gene_symbol] = ensembl_gene
+
+server=pbm.Server(host='http://www.ensembl.org')
+mart=server['ENSEMBL_MART_ENSEMBL']
+dataset=mart['hsapiens_gene_ensembl']
 # List the types of data we want
 attributes = ['gene_biotype', 'hgnc_symbol']
-
+response = dataset.query(attributes=attributes)
 # Get the mapping between the attributes
-response = mart.search({'attributes': attributes})
-data = response.raw.data.decode('ascii')
+# response = mart.search({'attributes': attributes})
 
-genesymbol_to_biotype = {}
-# Store the data in a dict
-for line in data.splitlines():
-    line = line.split('\t')
-    # The entries are in the same order as in the `attributes` variable
-    ensembl_gene = line[0]
-    gene_symbol = line[1]
-
-    genesymbol_to_biotype[gene_symbol] = ensembl_gene
+genesymbol_to_biotype = response.to_dict()
 
 ################################################################
 # My gene processing and organization
@@ -326,22 +341,21 @@ def igheavv_corr(celltypes, candidate_gene,figname):
     axs.set_title(None, fontsize=10)
     axs.tick_params(axis='both', pad=0, length=0)
     # REW added this code ########################
-    f.savefig(figname)   # save the figure to file
-    plt.close(fig)    # close the figure window
+    #f.savefig(figname)   # save the figure to file
+    #plt.close(fig)    # close the figure window
+    # 
+    # Plot scatter plots ##########################
+    # def myscatter(myaxs,df,x,y,mytitle,myxlab,myylab):
+    #    sns.scatterplot(data=df,x=x,y=y,ax=myaxs[0,0])
+    #    myaxs[0,0].set_title(mytitle)
+    #    myaxs[0,0].set_xlabel(myxlabel)
+    #    myaxs[0,0].set_ylabel(myylabel)
     
-
-    # Plot scatter plots #########################
-    def myscatter(myaxs,x,y,mytitle,myxlabel,myylabel):
-        myaxs[0,0].scatter(x,y,color='blue','marker'='o')
-        myaxs[0,0].set_title(mytitle)
-        myaxs[0,0].set_xlabel(myxlabel)
-        myaxs[0,0].set_ylabel(myylabel)
-
-    sns.set_style("white")
+    # sns.set_style("white")
     f, axs = plt.subplots(1,7, dpi=100, constrained_layout=True) # set up the figure and axes
 
-    for i in range(df.shape[0]): # which data frame did Tomer make that went into correlation analysis??? That is probably the one I need to scatter plot
-        myscatter(axs,'DLC1','IGHG1','IGHG1','DLC1 log(CPM)','IGHG1 log(CPM)')# THESE ARGUMENTS NEED TO BE GENERALIZED FOR ANY IGH GENE / CANDIDATE GENE
+    #for i in range(dfi.shape[0]): # which data frame did Tomer make that went into correlation analysis??? That is probably the one I need to scatter plot
+    #    myscatter(axs,'DLC1','IGHG1','IGHG1','DLC1 log(CPM)','IGHG1 log(CPM)')# THESE ARGUMENTS NEED TO BE GENERALIZED FOR ANY IGH GENE / CANDIDATE GENE
         # FIGURE OUT WHERE THOSE NAMES ARE STORED IN THE DATA FRAME OR ELSEWHERE TO ACCESS FOR THIS FUNCTION
         # MIGHT BE ROW/COL NAMES OF THE DATA FRAME df_save or dfi?
     ##############################################
